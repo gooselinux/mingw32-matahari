@@ -1,0 +1,72 @@
+---
+ src/CMakeLists.txt |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+Index: beekhof-matahari-0b41287/src/CMakeLists.txt
+===================================================================
+--- beekhof-matahari-0b41287.orig/src/CMakeLists.txt	2011-04-01 16:04:05.000000000 +0200
++++ beekhof-matahari-0b41287/src/CMakeLists.txt	2011-04-01 16:11:40.847013022 +0200
+@@ -58,7 +58,7 @@ set(SCHEMA_SOURCES
+ ## Libraries and Common code
+ # set(COMMON_SOURCES lib/mh_agent.cpp)
+ 
+-add_library (mqmfagent SHARED lib/mh_agent.cpp)
++add_library (mqmfagent SHARED lib/mh_agent.cpp ${CMAKE_CURRENT_BINARY_DIR}/qmf/org/matahariproject/QmfPackage.cpp)
+ set_target_properties(mqmfagent PROPERTIES SOVERSION ${MAGENT_VERSION})
+ 
+ add_library (mcommon SHARED lib/utilities.c lib/mainloop.c)
+@@ -66,21 +66,23 @@ set_target_properties(mcommon PROPERTIES
+ 
+ add_library (mhost SHARED lib/host.c lib/host_${VARIANT}.c)
+ set_target_properties(mhost PROPERTIES SOVERSION ${MHOST_VERSION})
+-target_link_libraries(mhost mcommon)
++target_link_libraries(mhost mcommon mqmfagent)
+ 
+ add_library (msrv SHARED lib/services.c lib/services_${VARIANT}.c)
+ set_target_properties(msrv PROPERTIES SOVERSION ${MSRV_VERSION})
+-target_link_libraries(msrv mcommon)
++target_link_libraries(msrv mcommon mqmfagent)
+ 
+ add_library (mnet SHARED lib/network.c lib/network_${VARIANT}.c)
+ set_target_properties(mnet PROPERTIES SOVERSION ${MNET_VERSION})
+-target_link_libraries(mnet mcommon)
++target_link_libraries(mnet mcommon mqmfagent)
+ 
+ if(WIN32)
+    target_link_libraries(mhost wsock32)
+    target_link_libraries(mcommon wsock32)
+ endif(WIN32)
+ 
++target_link_libraries(mqmfagent mcommon)
++
+ ## Daemons
+ add_executable(${M_HOST} host/matahari-host.cpp ${SCHEMA_SOURCES} ${COMMON_SOURCES} )
+ target_link_libraries(${M_HOST} mhost)
+@@ -92,7 +94,7 @@ add_executable(${M_SRV}  service/matahar
+ target_link_libraries(${M_SRV} msrv)
+ 
+ foreach(daemon ${DAEMONS}) 
+-   target_link_libraries(${daemon} mcommon mqmfagent)
++   target_link_libraries(${daemon} mcommon)
+    if(WIN32)
+       target_link_libraries(${daemon} wsock32)
+    endif(WIN32)
+@@ -139,6 +141,7 @@ if(glib_FOUND)
+       target_link_libraries(${daemon} ${glib_LIBRARIES})
+    endforeach(daemon ${DAEMONS}) 
+    target_link_libraries(mcommon ${glib_LIBRARIES})
++   target_link_libraries(mqmfagent ${glib_LIBRARIES})
+ else(glib_FOUND)
+    message(FATAL_ERROR "Glib2 header/library not found.")
+ endif(glib_FOUND)
+@@ -191,8 +194,10 @@ endif (regen_schema)
+ # Add QF libraries
+ foreach(daemon ${DAEMONS}) 
+     target_link_libraries(${daemon} ${QPIDCOMMON_LIBRARY} ${QPIDCLIENT_LIBRARY} ${QPIDMESSAGING_LIBRARY} ${QMF2_LIBRARY})
++    target_link_libraries(mqmfagent ${QPIDCOMMON_LIBRARY} ${QPIDCLIENT_LIBRARY} ${QPIDMESSAGING_LIBRARY} ${QMF2_LIBRARY})
+     IF(QPIDTYPES_FOUND)
+         target_link_libraries(${daemon} ${QPIDTYPES_LIBRARY})
++	target_link_libraries(mqmfagent ${QPIDTYPES_LIBRARY})
+     ENDIF(QPIDTYPES_FOUND)
+ endforeach(daemon ${DAEMONS}) 
+ 
